@@ -1,0 +1,22 @@
+# Build output
+cmake-build-debug/
+cmake-build-release/
+build/
+test
+
+# CLion
+.idea/
+
+# Compiled binaries
+*.o
+*.a
+*.so
+*.exe
+*.out
+
+# Makefile output
+test.exe
+
+# OS
+.DS_Store
+Thumbs.db
