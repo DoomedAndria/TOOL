@@ -363,6 +363,8 @@ static Token* scan_word(Lexer* lexer) {
     CHECK("string", TOKEN_STRING);
     CHECK("void", TOKEN_VOID);
 #undef CHECK
+
+    // stack allocated str slice copy
     char buf[count + 1];
     memcpy(buf, word, count);
     buf[count] = '\0';
@@ -370,14 +372,112 @@ static Token* scan_word(Lexer* lexer) {
     return make_token(lexer, TOKEN_IDENT, buf, 0);
 }
 
+static Token* scan_number(Lexer* lexer) {
+    const char* source = lexer->source;
+    if (!isdigit(source[lexer->pos])) return NULL;
+    int count = 0;
+    int dot_occ = 0;
+    int start = lexer->pos;
+
+    while (isdigit(source[lexer->pos+count]) || (!dot_occ && source[lexer->pos + count] == '.')) {
+        if (source[lexer->pos + count] == '.') {
+            if (!isdigit(source[lexer->pos + count + 1])) break;
+            dot_occ = 1;
+        }
+        ++count;
+    }
+
+    const char* word = source + start;
+
+    // stack allocated str slice copy
+    char buf[count + 1];
+    memcpy(buf, word, count);
+    buf[count] = '\0';
+
+    if (dot_occ) return make_token(lexer, TOKEN_FLOAT_LIT, buf, count);
+    return make_token(lexer, TOKEN_INT_LIT, buf, count);
+}
+
+static Token* scan_string(Lexer* lexer) {
+    const char* source = lexer->source;
+    const int start = lexer->pos;
+    if (source[start] != '"') return NULL;
+
+    int count = 1;
+    while (1) {
+        const char c = source[lexer->pos + count];
+        if (c == '\n' || c == '\0') {
+            const char buf[2] = {lexer->source[lexer->pos], '\0'};
+            return make_token(lexer, TOKEN_UNKNOWN, buf, 1);
+        }
+        if (c == '\\') {
+            const char c1 = source[lexer->pos + count + 1];
+            if (c1 == '\n' || c1 == '\0') return make_token(lexer, TOKEN_UNKNOWN, "\"", 1);
+            count += 2;
+            continue;
+        }
+        if (c == '"') {
+            count++;
+            break;
+        }
+        count++;
+    }
+
+    const char* word = source + start;
+
+    // stack allocated str slice copy
+    char buf[count - 1];
+    memcpy(buf, word + 1, count - 2);
+    buf[count - 2] = '\0';
+
+    return make_token(lexer, TOKEN_STRING_LIT, buf, count);
+}
+
+static Token* scan_char(Lexer* lexer) {
+    const char* source = lexer->source;
+    const int start = lexer->pos;
+    if (source[start] != '\'') return NULL;
+    const char c = source[start + 1];
+    const char c1 = source[start + 2];
+    if (c == '\\') {
+        if (c1 == '\n' || c1 == '\0' || source[start + 3] != '\'')
+            return make_token(lexer, TOKEN_UNKNOWN, "'", 1);
+        const char buf[3] = {'\\', c1, '\0'};
+        return make_token(lexer, TOKEN_CHAR_LIT, buf, 4);
+    }
+    if (c == '\n' || c == '\0' || c == '\'' || c1 != '\'') return make_token(lexer, TOKEN_UNKNOWN, "'", 1);
+    const char buf1[2] = {c, '\0'};
+    return make_token(lexer, TOKEN_CHAR_LIT, buf1, 3);
+}
+
+static void skip_comments(Lexer* lexer) {
+    const char* source = lexer->source;
+    const int s = lexer->pos;
+    if (source[s] == '/' && source[s + 1] == '/') {
+        lexer->pos += 2;
+        while (source[lexer->pos] != '\n' && source[lexer->pos] != '\0')
+            lexer->pos++;
+
+    }
+}
+
 Token* LEXER_next(Lexer* lexer) {
     skip_whitespaces(lexer);
+    skip_comments(lexer);
+
     Token* token = scan_single(lexer);
     if (token) return token;
     token = scan_multi(lexer);
     if (token) return token;
     token = scan_word(lexer);
     if (token) return token;
+    token = scan_number(lexer);
+    if (token) return token;
+    token = scan_string(lexer);
+    if (token) return token;
+    token = scan_char(lexer);
+    if (token) return token;
+
     const char buf[2] = {lexer->source[lexer->pos], '\0'};
     return make_token(lexer, TOKEN_UNKNOWN, buf, 1);
 }

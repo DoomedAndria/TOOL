@@ -4,14 +4,36 @@
 #include "lib/file/file.h"
 #include "compiler/lexer/lexer.h"
 
-int main() {
-    const char* code = "x := 42\nint y = 3";
-    Lexer* lexer = LEXER_create(code);
-    const Token* token = LEXER_next(lexer);
-    while (token->type != TOKEN_EOF) {
-        print_token(token);
+static void lex_print(const char* source) {
+    printf("Source: \"%s\"\n", source);
+    Lexer* lexer = LEXER_create(source);
+    Token* token;
+    while (1) {
         token = LEXER_next(lexer);
+        print_token(token);
+        int done = token->type == TOKEN_EOF;
+        free(token->value);
+        free(token);
+        if (done) break;
     }
-    print_token(token);
+    LEXER_free(lexer);
+    printf("\n\n");
+}
+
+int main() {
+    // strings
+    lex_print("\"hello\"");
+    lex_print("\"\"");
+    lex_print("\"hello world\"");
+
+    // unterminated string — hits newline
+    lex_print("\"hello\nworld\"");
+
+    // unterminated string — hits EOF
+    lex_print("\"hello");
+
+    // string in expression
+    lex_print("x := \"foo\"");
+
     return 0;
 }
