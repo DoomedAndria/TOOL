@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list/list.h"
+#include "../list/list.h"
 
 char* STR_trim(const char* str) {
     char* empty = malloc(1);

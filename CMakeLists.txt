@@ -15,4 +15,6 @@ add_executable(untitled
         src/lib/arena/arena.c
         src/lib/file/file.c
         src/lib/types.c
+        src/compiler/lexer/lexer.h
+        src/compiler/lexer/lexer.c
 )
