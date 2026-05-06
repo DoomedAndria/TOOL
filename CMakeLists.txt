@@ -19,4 +19,6 @@ add_executable(untitled
         src/compiler/lexer/lexer.c
         src/compiler/ast/ast.h
         src/compiler/ast/ast.c
+        src/compiler/parser/parser.h
+        src/compiler/parser/parser.c
 )

@@ -37,6 +37,7 @@ typedef enum {
     TOKEN_VOID,
 
     //keywords
+    TOKEN_FROM,
     TOKEN_CONST,
     TOKEN_IF,
     TOKEN_ELSE,
@@ -100,6 +101,8 @@ typedef struct Token {
 } Token;
 
 typedef struct Lexer Lexer;
+
+void print_token_type(TokenType type);
 
 void print_token(const Token* token);
 

@@ -13,7 +13,7 @@ struct Lexer {
 };
 
 
-static void print_token_type(const TokenType type) {
+void print_token_type(const TokenType type) {
     switch (type) {
         // special
         case TOKEN_NEWLINE: printf("TOKEN_NEWLINE");
@@ -78,6 +78,8 @@ static void print_token_type(const TokenType type) {
             break;
 
         // keywords
+        case TOKEN_FROM: printf("TOKEN_FROM");
+            break;
         case TOKEN_CONST: printf("TOKEN_CONST");
             break;
         case TOKEN_IF: printf("TOKEN_IF");
@@ -316,6 +318,7 @@ static Token* scan_word(Lexer* lexer) {
         return make_token(lexer,type, str, 0);
 
 
+    CHECK("from", TOKEN_FROM);
     CHECK("const", TOKEN_CONST);
     CHECK("if", TOKEN_IF);
     CHECK("else", TOKEN_ELSE);
@@ -457,7 +460,6 @@ static void skip_comments(Lexer* lexer) {
         lexer->pos += 2;
         while (source[lexer->pos] != '\n' && source[lexer->pos] != '\0')
             lexer->pos++;
-
     }
 }
 
