@@ -17,4 +17,6 @@ add_executable(untitled
         src/lib/types.c
         src/compiler/lexer/lexer.h
         src/compiler/lexer/lexer.c
+        src/compiler/ast/ast.h
+        src/compiler/ast/ast.c
 )
