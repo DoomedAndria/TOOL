@@ -92,6 +92,7 @@ typedef enum {
     TOKEN_RBRACKET,
     TOKEN_COMMA,
     TOKEN_COLON,
+    TOKEN_SEMICOLON,
 } TokenType;
 
 typedef struct Token {

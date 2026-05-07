@@ -184,6 +184,8 @@ void print_token_type(const TokenType type) {
             break;
         case TOKEN_COLON: printf("TOKEN_COLON");
             break;
+        case TOKEN_SEMICOLON: printf("TOKEN_SEMICOLON");
+            break;
 
         default:
             printf("UNKNOWN_TOKEN_TYPE");
@@ -250,6 +252,7 @@ static Token* scan_single(Lexer* lexer) {
         case '?': return make_token(lexer, TOKEN_QUESTION, "?", 1);
         case '.': return make_token(lexer, TOKEN_DOT, ".", 1);
         case ',': return make_token(lexer, TOKEN_COMMA, ",", 1);
+        case ';': return make_token(lexer, TOKEN_SEMICOLON, ";", 1);
         case '\n': {
             Token* token = make_token(lexer, TOKEN_NEWLINE, "\n", 1);
             lexer->line++;

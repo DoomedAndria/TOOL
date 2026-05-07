@@ -45,7 +45,7 @@ static void free_f(void* data) {
     AST_free(data);
 }
 
-static int get_precedence(TokenType type) {
+static int get_precedence(const TokenType type) {
     switch (type) {
         case TOKEN_OR: return 1;
         case TOKEN_AND: return 2;
@@ -64,7 +64,7 @@ static int get_precedence(TokenType type) {
     }
 }
 
-static ASTNode* parse_expr(Parser* parser, int min_prec) {
+static ASTNode* parse_expr(Parser* parser, const int min_prec) {
     ASTNode* left;
     switch (parser->cur_token->type) {
         case TOKEN_INT_LIT: {
@@ -186,16 +186,276 @@ static ASTNode* parse_expression(Parser* parser) {
 }
 
 
+static ASTNode* parse_block(Parser* parser);
+
 static ASTNode* parse_if(Parser* parser) {
-    return NULL;
+    Token* token_if = advance(parser);
+    int line = token_if->line;
+    free(token_if->value);
+    free(token_if);
+
+    Token* lparen = expect(parser, TOKEN_LPAREN);
+    if (!lparen) return NULL;
+    free(lparen->value);
+    free(lparen);
+
+    ASTNode* cond = parse_expression(parser);
+    if (!cond) return NULL;
+
+    Token* rparen = expect(parser, TOKEN_RPAREN);
+    if (!rparen) {
+        AST_free(cond);
+        return NULL;
+    }
+    free(rparen->value);
+    free(rparen);
+
+    ASTNode* block = parse_block(parser);
+    if (!block) {
+        AST_free(cond);
+        return NULL;
+    }
+
+    ASTNode* if_else = AST_create_node(NODE_IF_ELSE, line);
+    if_else->as.if_else.stmt = cond;
+    if_else->as.if_else.block1 = block;
+
+
+    while (parser->cur_token->type == TOKEN_NEWLINE) {
+        Token* nl = advance(parser);
+        free(nl->value);
+        free(nl);
+    }
+    if (parser->cur_token->type == TOKEN_ELSE) {
+        Token* else_token = advance(parser);
+        free(else_token->value);
+        free(else_token);
+        if (parser->cur_token->type == TOKEN_IF) {
+            if_else->as.if_else.block2 = parse_if(parser);
+        } else {
+            if_else->as.if_else.block2 = parse_block(parser);
+        }
+    } else {
+        if_else->as.if_else.block2 = NULL;
+    }
+    return if_else;
 }
 
 static ASTNode* parse_while(Parser* parser) {
-    return NULL;
+    Token* while_token = advance(parser);
+    int line = while_token->line;
+    free(while_token->value);
+    free(while_token);
+
+    Token* lparen = expect(parser, TOKEN_LPAREN);
+    if (!lparen) return NULL;
+    free(lparen->value);
+    free(lparen);
+
+    ASTNode* expr = parse_expression(parser);
+    if (!expr) return NULL;
+
+    Token* rparen = expect(parser, TOKEN_RPAREN);
+    if (!rparen) {
+        AST_free(expr);
+        return NULL;
+    }
+    free(rparen->value);
+    free(rparen);
+
+    ASTNode* block = parse_block(parser);
+    if (!block) {
+        AST_free(expr);
+        return NULL;
+    }
+
+    ASTNode* while_node = AST_create_node(NODE_WHILE, line);
+    while_node->as._while.stmt = expr;
+    while_node->as._while.block = block;
+
+    return while_node;
 }
 
+static ASTNode* parse_statement(Parser* parser);
+
 static ASTNode* parse_for(Parser* parser) {
-    return NULL;
+    Token* for_token = advance(parser);
+    int line = for_token->line;
+    free(for_token->value);
+    free(for_token);
+
+    Token* lparen = expect(parser, TOKEN_LPAREN);
+    if (!lparen) return NULL;
+    free(lparen->value);
+    free(lparen);
+
+    const TokenType cur_ttype = parser->cur_token->type;
+    if (cur_ttype == TOKEN_LPAREN) {
+        Token* lparen_token = advance(parser);
+        free(lparen_token->value);
+        free(lparen_token);
+
+        List* vnames = LIST_create(NULL, free,NULL);
+        while (parser->cur_token->type != TOKEN_RPAREN) {
+            Token* idf_token = expect(parser, TOKEN_IDENT);
+            if (!idf_token) {
+                LIST_free(vnames);
+                return NULL;
+            }
+            LIST_append(vnames, idf_token->value);
+            free(idf_token);
+
+            Token* comma = expect(parser, TOKEN_COMMA);
+            if (!comma) {
+                if (parser->cur_token->type == TOKEN_RPAREN)
+                    break;
+                LIST_free(vnames);
+                return NULL;
+            }
+            free(comma->value);
+            free(comma);
+        }
+
+        Token* rparen = advance(parser);
+        free(rparen->value);
+        free(rparen);
+
+        Token* in_token = expect(parser, TOKEN_IN);
+        if (!in_token) {
+            LIST_free(vnames);
+            return NULL;
+        }
+        free(in_token->value);
+        free(in_token);
+
+        ASTNode* coll = parse_expression(parser);
+        if (!coll) {
+            LIST_free(vnames);
+            return NULL;
+        }
+
+        rparen = expect(parser, TOKEN_RPAREN);
+        if (!rparen) {
+            AST_free(coll);
+            LIST_free(vnames);
+            return NULL;
+        }
+        free(rparen->value);
+        free(rparen);
+
+        ASTNode* block = parse_block(parser);
+        if (!block) {
+            AST_free(coll);
+            LIST_free(vnames);
+            return NULL;
+        }
+
+        ASTNode* foreach_node = AST_create_node(NODE_FOREACH, line);
+        foreach_node->as.foreach.vnames = vnames;
+        foreach_node->as.foreach.expression = coll;
+        foreach_node->as.foreach.block = block;
+        return foreach_node;
+    }
+    if (cur_ttype == TOKEN_IDENT && parser->peek_token->type == TOKEN_IN) {
+        Token* idf_token = advance(parser);
+        char* idf_name = idf_token->value;
+        free(idf_token);
+
+        Token* in_token = expect(parser, TOKEN_IN);
+        if (!in_token) {
+            free(idf_name);
+            return NULL;
+        }
+        free(in_token->value);
+        free(in_token);
+
+        ASTNode* coll = parse_expression(parser);
+        if (!coll) {
+            free(idf_name);
+            return NULL;
+        }
+
+        Token* rparen = expect(parser, TOKEN_RPAREN);
+        if (!rparen) {
+            AST_free(coll);
+            free(idf_name);
+            return NULL;
+        }
+        free(rparen->value);
+        free(rparen);
+
+        ASTNode* block = parse_block(parser);
+        if (!block) {
+            AST_free(coll);
+            free(idf_name);
+            return NULL;
+        }
+
+        ASTNode* foreach_node = AST_create_node(NODE_FOREACH, line);
+        List* vnames = LIST_create(NULL, free,NULL);
+        LIST_append(vnames, idf_name);
+        foreach_node->as.foreach.vnames = vnames;
+        foreach_node->as.foreach.expression = coll;
+        foreach_node->as.foreach.block = block;
+        return foreach_node;
+    }
+    ASTNode* init = parse_statement(parser);
+    if (!init) return NULL;
+
+    Token* semicolon = expect(parser, TOKEN_SEMICOLON);
+    if (!semicolon) {
+        AST_free(init);
+        return NULL;
+    }
+    free(semicolon->value);
+    free(semicolon);
+
+    ASTNode* cond = parse_expression(parser);
+    if (!cond) {
+        AST_free(init);
+        return NULL;
+    }
+
+    semicolon = expect(parser, TOKEN_SEMICOLON);
+    if (!semicolon) {
+        AST_free(init);
+        AST_free(cond);
+        return NULL;
+    }
+    free(semicolon->value);
+    free(semicolon);
+
+    ASTNode* post = parse_expression(parser);
+    if (!post) {
+        AST_free(init);
+        AST_free(cond);
+        return NULL;
+    }
+
+    Token* rparen = expect(parser, TOKEN_RPAREN);
+    if (!rparen) {
+        AST_free(init);
+        AST_free(cond);
+        AST_free(post);
+        return NULL;
+    }
+    free(rparen->value);
+    free(rparen);
+
+    ASTNode* block = parse_block(parser);
+    if (!block) {
+        AST_free(init);
+        AST_free(cond);
+        AST_free(post);
+        return NULL;
+    }
+
+    ASTNode* for_node = AST_create_node(NODE_FOR, line);
+    for_node->as._for.init = init;
+    for_node->as._for.cond = cond;
+    for_node->as._for.post = post;
+    for_node->as._for.block = block;
+    return for_node;
 }
 
 
@@ -309,12 +569,11 @@ static ASTNode* parse_block(Parser* parser) {
 
         while (parser->cur_token->type != TOKEN_RBRACE
                && parser->cur_token->type != TOKEN_EOF) {
-
             ASTNode* st = parse_statement(parser);
             if (st) LIST_append(stmts, st);
         }
         block->as.block.stmts = stmts;
-        Token* rbrace = expect(parser,TOKEN_RBRACE);
+        Token* rbrace = expect(parser, TOKEN_RBRACE);
         if (rbrace) {
             free(rbrace->value);
             free(rbrace);
