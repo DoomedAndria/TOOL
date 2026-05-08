@@ -98,7 +98,7 @@ void print_token_type(const TokenType type) {
             break;
         case TOKEN_RETURN: printf("TOKEN_RETURN");
             break;
-        case TOKEN_TYPE: printf("TOKEN_TYPE");
+        case TOKEN_REF: printf("TOKEN_REF");
             break;
         case TOKEN_STRUCT: printf("TOKEN_STRUCT");
             break;
@@ -331,7 +331,7 @@ static Token* scan_word(Lexer* lexer) {
     CHECK("break", TOKEN_BREAK);
     CHECK("continue", TOKEN_CONTINUE);
     CHECK("return", TOKEN_RETURN);
-    CHECK("type", TOKEN_TYPE);
+    CHECK("ref", TOKEN_REF);
     CHECK("struct", TOKEN_STRUCT);
     CHECK("enum", TOKEN_ENUM);
     CHECK("switch", TOKEN_SWITCH);

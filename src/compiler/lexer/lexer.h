@@ -47,7 +47,7 @@ typedef enum {
     TOKEN_BREAK,
     TOKEN_CONTINUE,
     TOKEN_RETURN,
-    TOKEN_TYPE,
+    TOKEN_REF,
     TOKEN_STRUCT,
     TOKEN_ENUM,
     TOKEN_SWITCH,

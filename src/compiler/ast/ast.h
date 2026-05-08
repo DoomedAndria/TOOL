@@ -70,6 +70,7 @@ struct ASTNode {
 
         // NODE_VAR_DECL, NODE_VAR_ASSIGN
         struct {
+            int is_const;
             char* type_name;
             char* name;
             ASTNode* stmt;
