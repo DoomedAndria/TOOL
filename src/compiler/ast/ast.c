@@ -41,7 +41,7 @@ void AST_free(ASTNode* node) {
 
         case NODE_VAR_ASSIGN:
         case NODE_VAR_DECL:
-            AST_free(node->as.dec_ass.stmt);
+            if (node->as.dec_ass.stmt) AST_free(node->as.dec_ass.stmt);
             free(node->as.dec_ass.type_name);
             free(node->as.dec_ass.name);
             break;
@@ -83,12 +83,12 @@ void AST_free(ASTNode* node) {
             AST_free(node->as.f_dec.block);
             LIST_free(node->as.f_dec.var_decls);
             free(node->as.f_dec.name);
-            free(node->as.f_dec.ret_type);
+            LIST_free(node->as.f_dec.ret_types);
             break;
 
         case NODE_FUNC_CALL:
+            AST_free(node->as.f_call.callee);
             LIST_free(node->as.f_call.exps);
-            free(node->as.f_call.f_name);
             break;
 
         case NODE_SWITCH:
@@ -131,6 +131,18 @@ void AST_free(ASTNode* node) {
         case NODE_FLD_ACC:
             AST_free(node->as.fld_acc.obj);
             free(node->as.fld_acc.field_name);
+            break;
+
+        case NODE_FLD_SET:
+            AST_free(node->as.fld_set.obj);
+            free(node->as.fld_set.field_name);
+            AST_free(node->as.fld_set.value);
+            break;
+
+        case NODE_IDX_SET:
+            AST_free(node->as.idx_set.obj);
+            AST_free(node->as.idx_set.index);
+            AST_free(node->as.idx_set.value);
             break;
     }
     free(node);

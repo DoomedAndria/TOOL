@@ -78,6 +78,8 @@ void print_token_type(const TokenType type) {
             break;
 
         // keywords
+        case TOKEN_FN: printf("TOKEN_FN");
+            break;
         case TOKEN_FROM: printf("TOKEN_FROM");
             break;
         case TOKEN_CONST: printf("TOKEN_CONST");
@@ -166,6 +168,8 @@ void print_token_type(const TokenType type) {
             break;
         case TOKEN_DOT: printf("TOKEN_DOT");
             break;
+        case TOKEN_ARROW: printf("TOKEN_ARROW");
+            break;
 
         // delimiters
         case TOKEN_LPAREN: printf("TOKEN_LPAREN");
@@ -239,7 +243,6 @@ static Token* scan_single(Lexer* lexer) {
     const char* source = lexer->source;
     switch (source[lexer->pos]) {
         case '+': return make_token(lexer, TOKEN_PLUS, "+", 1);
-        case '-': return make_token(lexer, TOKEN_MINUS, "-", 1);
         case '*': return make_token(lexer, TOKEN_STAR, "*", 1);
         case '/': return make_token(lexer, TOKEN_SLASH, "/", 1);
         case '%': return make_token(lexer, TOKEN_PERCENT, "%", 1);
@@ -267,6 +270,10 @@ static Token* scan_multi(Lexer* lexer) {
     const char* source = lexer->source;
     const char buf[2] = {source[lexer->pos], '\0'};
     switch (source[lexer->pos]) {
+        case '-':
+            if (source[lexer->pos + 1] == '>')
+                return make_token(lexer, TOKEN_ARROW, "->", 2);
+            return make_token(lexer, TOKEN_MINUS, "-", 1);
         case '=':
             if (source[lexer->pos + 1] == '=')
                 return make_token(lexer, TOKEN_EQ, "==", 2);
@@ -321,6 +328,7 @@ static Token* scan_word(Lexer* lexer) {
         return make_token(lexer,type, str, 0);
 
 
+    CHECK("fn",TOKEN_FN);
     CHECK("from", TOKEN_FROM);
     CHECK("const", TOKEN_CONST);
     CHECK("if", TOKEN_IF);

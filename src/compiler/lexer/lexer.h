@@ -62,6 +62,7 @@ typedef enum {
     TOKEN_FREE,
     TOKEN_GET,
     TOKEN_SET,
+    TOKEN_FN,
 
     // operators
     TOKEN_ASSIGN,
@@ -82,6 +83,7 @@ typedef enum {
     TOKEN_NOT,
     TOKEN_QUESTION,
     TOKEN_DOT,
+    TOKEN_ARROW,
 
     // delimiters
     TOKEN_LPAREN,

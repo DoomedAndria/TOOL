@@ -32,6 +32,8 @@ typedef enum {
     NODE_FUNC_CALL,
     NODE_IDX_ACC,
     NODE_FLD_ACC,
+    NODE_IDX_SET,
+    NODE_FLD_SET,
 
     NODE_BLOCK,
 } NodeType;
@@ -116,7 +118,9 @@ struct ASTNode {
 
         // NODE_FUNC_DECL
         struct {
-            char* ret_type;
+            int is_pub;
+            int is_static;
+            List* ret_types;
             char* name;
             List* var_decls;
             ASTNode* block;
@@ -124,7 +128,7 @@ struct ASTNode {
 
         // NODE_FUNC_CALL
         struct {
-            char* f_name;
+            ASTNode* callee;
             List* exps;
         } f_call;
 
@@ -177,6 +181,20 @@ struct ASTNode {
             ASTNode* obj;
             char* field_name;
         } fld_acc;
+
+        // NODE_FLD_SET
+        struct {
+            ASTNode* obj;
+            char* field_name;
+            ASTNode* value;
+        } fld_set;
+
+        // NODE_IDX_SET
+        struct {
+            ASTNode* obj;
+            ASTNode* index;
+            ASTNode* value;
+        } idx_set;
     } as;
 };
 
