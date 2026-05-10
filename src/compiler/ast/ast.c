@@ -13,6 +13,7 @@ ASTNode* AST_create_node(const NodeType type, const int line) {
 }
 
 void AST_free(ASTNode* node) {
+    if (!node) return;
     switch (node->type) {
         case NODE_BRK:
         case NODE_CONT:

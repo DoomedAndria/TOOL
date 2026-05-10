@@ -48,6 +48,7 @@ typedef struct TypeChecker TypeChecker;
 
 struct TypeChecker {
     Scope* scope;
+    const char* current_return_type;
     int errors;
 };
 

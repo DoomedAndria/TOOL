@@ -2,6 +2,7 @@
 #include "typechecker.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "compiler/ast/ast.h"
 #include "lib/types.h"
@@ -90,6 +91,7 @@ TypeChecker* TC_create() {
     Scope* scope = SCOPE_create(NULL);
     typechecker->scope = scope;
     typechecker->errors = 0;
+    typechecker->current_return_type = NULL;
     return typechecker;
 }
 
@@ -121,6 +123,55 @@ static void tc_pop_scope(TypeChecker* tc) {
     SCOPE_free(s);
 }
 
+
+static const char* tc_infer_type(TypeChecker* tc, ASTNode* expr) {
+    switch (expr->type) {
+        case NODE_INT_LIT: return "int";
+        case NODE_FLOAT_LIT: return "float";
+        case NODE_STR_LIT: return "string";
+        case NODE_CHAR_LIT: return "char";
+        case NODE_BOOL_LIT: return "bool";
+        case NODE_NULL_LIT: return "null";
+        case NODE_IDENT: {
+            const Symbol* s = SCOPE_lookup(tc->scope, expr->as.str_val);
+            if (s) return s->type;
+            return "unknown";
+        }
+        case NODE_BINOP: {
+            const char* op = expr->as.binop.op;
+            const int is_bool = strcmp(op, "==") == 0 ||
+                                strcmp(op, "!=") == 0 ||
+                                strcmp(op, "<") == 0 ||
+                                strcmp(op, ">") == 0 ||
+                                strcmp(op, "<=") == 0 ||
+                                strcmp(op, ">=") == 0 ||
+                                strcmp(op, "&&") == 0 ||
+                                strcmp(op, "||") == 0;
+            if (is_bool) return "bool";
+            const char* left = tc_infer_type(tc, expr->as.binop.left);
+            const char* right = tc_infer_type(tc, expr->as.binop.right);
+            if (strcmp(left, "float") == 0 ||
+                strcmp(right, "float") == 0)
+                return "float";
+            return "int";
+        }
+        case NODE_UNOP: {
+            const char* op = expr->as.unop.op;
+            if (strcmp(op, "!") == 0) return "bool";
+            return tc_infer_type(tc, expr->as.unop.stmt);
+        }
+        case NODE_FUNC_CALL: {
+            const ASTNode* callee = expr->as.f_call.callee;
+            if (callee->type == NODE_IDENT) {
+                const Symbol* s = SCOPE_lookup(tc->scope, callee->as.str_val);
+                if (s) return s->type;
+            }
+            return "unknown";
+        }
+        default: return "unknown";
+    }
+}
+
 static void tc_check_block(TypeChecker* tc, ASTNode* block);
 
 static void tc_check_block_stmts(TypeChecker* tc, ASTNode* block);
@@ -128,10 +179,20 @@ static void tc_check_block_stmts(TypeChecker* tc, ASTNode* block);
 static void tc_check_node(TypeChecker* tc, ASTNode* node) {
     switch (node->type) {
         case NODE_VAR_DECL: {
-            char* type_name = "unknown";
-            char* node_type_name = node->as.dec_ass.type_name;
+            const char* type_name = "unknown";
+            const char* node_type_name = node->as.dec_ass.type_name;
             if (node_type_name) {
                 type_name = node_type_name;
+            }
+            if (!node_type_name && node->as.dec_ass.stmt)
+                type_name = tc_infer_type(tc, node->as.dec_ass.stmt);
+            if (node_type_name && node->as.dec_ass.stmt) {
+                const char* inferred = tc_infer_type(tc, node->as.dec_ass.stmt);
+                if (strcmp(inferred, node_type_name) != 0) {
+                    printf("Error: type mismatch in '%s': declared '%s' but got '%s' (line %d)\n",
+                           node->as.dec_ass.name, node_type_name, inferred, node->line);
+                    tc->errors++;
+                }
             }
             tc_define(tc,
                       node->as.dec_ass.name,
@@ -170,9 +231,10 @@ static void tc_check_node(TypeChecker* tc, ASTNode* node) {
                           node1->line);
             }
             LIST_iter_free(iter);
-
+            const char* prev_return_type = tc->current_return_type;
+            tc->current_return_type = type_name;
             tc_check_block_stmts(tc, node->as.f_dec.block);
-
+            tc->current_return_type = prev_return_type;
             tc_pop_scope(tc);
             break;
         }
@@ -258,12 +320,35 @@ static void tc_check_node(TypeChecker* tc, ASTNode* node) {
             } else if (symbol->is_const) {
                 printf("Error: cannot assign to const '%s' (line %d)\n", symbol->name, node->line);
                 tc->errors++;
+            } else if (node->as.dec_ass.stmt) {
+                const char* inferred = tc_infer_type(tc,node->as.dec_ass.stmt);
+                if (strcmp(inferred, symbol->type) != 0) {
+                    printf("Error: type mismatch in assignment to '%s': expected '%s' but got '%s' (line %d)\n",
+                           symbol->name, symbol->type, inferred, node->line);
+                    tc->errors++;
+                }
             }
             break;
         }
+        case NODE_FLD_SET: {
+            tc_check_node(tc, node->as.fld_set.value);
+            break;
+        }
+        case NODE_IDX_SET: {
+            tc_check_node(tc, node->as.idx_set.index);
+            tc_check_node(tc, node->as.idx_set.value);
+            break;
+        }
         case NODE_RETURN_STM: {
-            if (node->as.rtrn.stmt)
+            if (node->as.rtrn.stmt && tc->current_return_type) {
                 tc_check_node(tc, node->as.rtrn.stmt);
+                const char* inferred = tc_infer_type(tc, node->as.rtrn.stmt);
+                if (strcmp(inferred, tc->current_return_type) != 0) {
+                    printf("Error: return type mismatch: expected '%s' but got '%s' (line %d)\n",
+                           tc->current_return_type, inferred, node->line);
+                    tc->errors++;
+                }
+            }
             break;
         }
         case NODE_IMPORT: {
