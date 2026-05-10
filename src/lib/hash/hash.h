@@ -17,6 +17,8 @@ typedef struct HashTable HashTable;
 HashTable* HASH_create(int bucket_count, HashFunc hash_func, CompareFunc cmp, FreeFunc free_key, FreeFunc free_value,
                        PrintFunc print_key, PrintFunc print_value);
 
+HashTable* HASH_create_str(FreeFunc free_value, PrintFunc print_value);
+
 void HASH_free(HashTable* ht);
 
 void HASH_insert(HashTable* ht, const void* key, void* value);

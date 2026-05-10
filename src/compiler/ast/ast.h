@@ -17,7 +17,7 @@ typedef enum {
     NODE_CONT,
     NODE_IMPORT,
     NODE_STRUCT_DECL,
-    NODE_TYPE_DECL,
+    NODE_REF_DECL,
     NODE_ENUM_DECL,
 
     NODE_BINOP,
@@ -151,12 +151,12 @@ struct ASTNode {
             List* field_decls;
         } _struct;
 
-        // NODE_TYPE_DECL
+        // NODE_REF_DECL
         struct {
             char* name;
             List* fields;
             List* methods;
-        } type_decl;
+        } ref_decl;
 
         // NODE_ENUM_DECL
         struct {

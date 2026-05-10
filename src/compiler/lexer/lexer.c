@@ -6,6 +6,7 @@
 #include "lexer.h"
 
 
+// ReSharper disable once CppClassNeverUsed
 struct Lexer {
     const char* source;
     int pos;
@@ -391,7 +392,7 @@ static Token* scan_number(Lexer* lexer) {
     if (!isdigit(source[lexer->pos])) return NULL;
     int count = 0;
     int dot_occ = 0;
-    int start = lexer->pos;
+    const int start = lexer->pos;
 
     while (isdigit(source[lexer->pos+count]) || (!dot_occ && source[lexer->pos + count] == '.')) {
         if (source[lexer->pos + count] == '.') {

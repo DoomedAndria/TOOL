@@ -21,4 +21,7 @@ add_executable(untitled
         src/compiler/ast/ast.c
         src/compiler/parser/parser.h
         src/compiler/parser/parser.c
+        src/compiler/typechecker/typechecker.c
+        src/compiler/typechecker/typechecker.h
+        src/lib/hash/hash_types.c
 )

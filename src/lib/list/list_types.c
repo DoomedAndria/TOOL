@@ -4,11 +4,11 @@
 #include "list.h"
 
 
-int compare_string(const void* a, const void* b) {
+static int compare_string(const void* a, const void* b) {
     return strcmp(a, b);
 }
 
-void print_string(const void *data) {
+static void print_string(const void *data) {
     printf("%s", (char*)data);
 }
 
@@ -18,13 +18,13 @@ List *LIST_create_string() {
 
 
 
-int compare_int(const void* a, const void* b) {
+static int compare_int(const void* a, const void* b) {
     const int aa = *((int*)a);
     const int bb = *((int*)b);
     return aa - bb;
 }
 
-void print_int(const void *data) {
+static void print_int(const void *data) {
     printf("%d", *((int*)data));
 }
 

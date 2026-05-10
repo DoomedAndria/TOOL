@@ -107,10 +107,10 @@ void AST_free(ASTNode* node) {
             free(node->as._struct.name);
             break;
 
-        case NODE_TYPE_DECL:
-            LIST_free(node->as.type_decl.fields);
-            LIST_free(node->as.type_decl.methods);
-            free(node->as.type_decl.name);
+        case NODE_REF_DECL:
+            LIST_free(node->as.ref_decl.fields);
+            LIST_free(node->as.ref_decl.methods);
+            free(node->as.ref_decl.name);
             break;
 
         case NODE_ENUM_DECL:

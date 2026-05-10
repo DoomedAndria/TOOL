@@ -597,10 +597,10 @@ static ASTNode* parse_ref(Parser* parser) {
 
     if (!consume(parser, TOKEN_RBRACE)) { free(name); LIST_free(fields); LIST_free(methods); return NULL; }
 
-    ASTNode* node = AST_create_node(NODE_TYPE_DECL, line);
-    node->as.type_decl.name = name;
-    node->as.type_decl.fields = fields;
-    node->as.type_decl.methods = methods;
+    ASTNode* node = AST_create_node(NODE_REF_DECL, line);
+    node->as.ref_decl.name = name;
+    node->as.ref_decl.fields = fields;
+    node->as.ref_decl.methods = methods;
     return node;
 }
 
